@@ -70,7 +70,12 @@ Rickshaw.Graph.HoverDetail = Rickshaw.Class.create({
 					}
 
 					if (s.data[i].x <= domainX && s.data[i + 1].x > domainX) {
-						dataIndex = i;
+						// Figure out which is closer
+						if( (domainX - s.data[i].x) > (s.data[i + 1].x - domainX))
+							dataIndex = i+1;
+						else
+							dataIndex = i;
+
 						break;
 					}
 					if (s.data[i + 1].x <= domainX) { i++ } else { i-- }
@@ -97,6 +102,8 @@ Rickshaw.Graph.HoverDetail = Rickshaw.Class.create({
 
 		var domainMouseY = graph.y.magnitude.invert(graph.element.offsetHeight - eventY);
 
+		var minDistMouseY = Number.MAX_VALUE;
+
 		detail/*.sort(sortFn)*/.forEach( function(d) {
 			if(d.value)
 			{
@@ -108,14 +115,23 @@ Rickshaw.Graph.HoverDetail = Rickshaw.Class.create({
 				d.graphX = graph.x(d.value.x); //graphX;
 				d.graphY = graph.y(d.value.y);
 				
-
-				// if (domainMouseY > d.value.y /*&& domainMouseY < d.value.y0 + d.value.y*/ && !activeItem) {
+				var yDist = Math.abs(d.graphY - graph.y(domainMouseY));
+				if( yDist < minDistMouseY)
+				{
+					minDistMouseY = yDist;
+					activeItem = d;
+				}
+				/*
+				if (domainMouseY > d.value.y /*&& domainMouseY < d.value.y0 + d.value.y* / && !activeItem) {
 					activeItem = d;
 					d.active = true;
-				// }
+				}*/
 			}
 
 		}, this );
+
+		if(activeItem)
+			activeItem.active = true;
 
 		this.element.innerHTML = '';
 		// this.element.style.left = graph.x(domainX) + 'px';
@@ -184,10 +200,10 @@ Rickshaw.Graph.HoverDetail = Rickshaw.Class.create({
 
 			this.element.appendChild(dot);
 
-			// if (d.active) {
+			if (d.active) {
 				item.className = 'item active';
 				dot.className = 'dot active';
-			// }
+			}
 
 		}, this );
 
