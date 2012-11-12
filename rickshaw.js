@@ -1671,14 +1671,7 @@ Rickshaw.Graph.HoverDetail = Rickshaw.Class.create({
 			});
 		
 
-		// var domainX = stackedData[0][dataIndex].x;
-		var formattedXValue; // = this.xFormatter(domainX);
-		// var graphX = graph.x(domainX);
-		// var formattedXValue;
-
-		// var detail = graph.series.active()
-		// 	.map( function(s) { return { order: order++, series: s, name: s.name, value: s.data[dataIndex] } } );
-
+		var formattedXValue;
 		var activeItem;
 
 		var sortFn = function(a, b) {
@@ -1985,7 +1978,9 @@ Rickshaw.Graph.Renderer = Rickshaw.Class.create( {
 			unstack: true,
 			padding: { top: 0.01, right: 0, bottom: 0.01, left: 0 },
 			stroke: false,
-			fill: false
+			fill: false,
+			xMin: undefined,
+			xMax: undefined
 		};
 	},
 
@@ -2034,8 +2029,8 @@ Rickshaw.Graph.Renderer = Rickshaw.Class.create( {
 			} );
 		} );
 
-		var xMin = stackedData[0][0].x;
-		var xMax = stackedData[0][ stackedData[0].length - 1 ].x;
+		var xMin = this.xMin || stackedData[0][0].x;
+		var xMax = this.xMax || stackedData[0][ stackedData[0].length - 1 ].x;
 
 		xMin -= (xMax - xMin) * this.padding.left;
 		xMax += (xMax - xMin) * this.padding.right;

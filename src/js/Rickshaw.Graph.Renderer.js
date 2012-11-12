@@ -24,7 +24,9 @@ Rickshaw.Graph.Renderer = Rickshaw.Class.create( {
 			unstack: true,
 			padding: { top: 0.01, right: 0, bottom: 0.01, left: 0 },
 			stroke: false,
-			fill: false
+			fill: false,
+			xMin: undefined,
+			xMax: undefined
 		};
 	},
 
@@ -73,8 +75,8 @@ Rickshaw.Graph.Renderer = Rickshaw.Class.create( {
 			} );
 		} );
 
-		var xMin = stackedData[0][0].x;
-		var xMax = stackedData[0][ stackedData[0].length - 1 ].x;
+		var xMin = this.xMin || stackedData[0][0].x;
+		var xMax = this.xMax || stackedData[0][ stackedData[0].length - 1 ].x;
 
 		xMin -= (xMax - xMin) * this.padding.left;
 		xMax += (xMax - xMin) * this.padding.right;
