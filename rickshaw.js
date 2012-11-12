@@ -1638,6 +1638,9 @@ Rickshaw.Graph.HoverDetail = Rickshaw.Class.create({
 		var order = 0;
 
 		var detail = graph.series.active()
+			.filter(function(s){
+				return s.data && s.data.length > 0;
+			})
 			.map(function(s){
 				var domainIndexScale = d3.scale.linear()
 					.domain([s.data[0].x, s.data.slice(-1).shift().x])
@@ -1653,7 +1656,7 @@ Rickshaw.Graph.HoverDetail = Rickshaw.Class.create({
 					}
 
 					if (s.data[i].x <= domainX && s.data[i + 1].x > domainX) {
-						// Figure out which is closer
+						// Figure out which is closer.
 						if( (domainX - s.data[i].x) > (s.data[i + 1].x - domainX))
 							dataIndex = i+1;
 						else
@@ -1669,7 +1672,7 @@ Rickshaw.Graph.HoverDetail = Rickshaw.Class.create({
 		
 
 		// var domainX = stackedData[0][dataIndex].x;
-		var formattedXValue = this.xFormatter(domainX);
+		var formattedXValue; // = this.xFormatter(domainX);
 		// var graphX = graph.x(domainX);
 		// var formattedXValue;
 
@@ -1694,7 +1697,7 @@ Rickshaw.Graph.HoverDetail = Rickshaw.Class.create({
 					this.yFormatter[detail.indexOf(d)](d.value.y) :
 					this.yFormatter(d.value.y);
 
-				formattedXValue = this.xFormatter(domainX);
+				d.formattedXValue = this.xFormatter(d.value.x);
 				d.graphX = graph.x(d.value.x); //graphX;
 				d.graphY = graph.y(d.value.y);
 				
@@ -1723,7 +1726,7 @@ Rickshaw.Graph.HoverDetail = Rickshaw.Class.create({
 			this.render( {
 				detail: detail,
 				domainX: domainX,
-				formattedXValue: formattedXValue,
+				// formattedXValue: formattedXValue,
 				mouseX: eventX,
 				mouseY: eventY
 			} );
@@ -1756,22 +1759,25 @@ Rickshaw.Graph.HoverDetail = Rickshaw.Class.create({
 		var mouseX = args.mouseX;
 		var mouseY = args.mouseY;
 
-		var formattedXValue = args.formattedXValue;
+		// var formattedXValue = args.formattedXValue;
 
-		var d
+		// var d
 
 		var xLabel = document.createElement('div');
 		xLabel.className = 'x_label';
-		xLabel.innerHTML = formattedXValue;
+		// xLabel.innerHTML = formattedXValue;
 		this.element.appendChild(xLabel);
 
 		detail.forEach( function(d) {
 
 			var item = document.createElement('div');
 			item.className = 'item';
-			item.innerHTML = this.formatter(d.series, domainX, d.value.y, formattedXValue, d.formattedYValue, d);
-			item.style.top = this.graph.y(d.value.y) + 'px';
-			item.style.left = this.graph.x(d.value.x) + 'px';
+			if(d.value)
+			{
+				item.innerHTML = this.formatter(d.series, d.value.x, d.value.y, d.formattedXValue, d.formattedYValue, d);
+				item.style.top = this.graph.y(d.value.y) + 'px';
+			}
+			// item.style.left = this.graph.x(d.value.x) + 'px';
 			this.element.appendChild(item);
 
 			var dot = document.createElement('div');
@@ -1784,6 +1790,8 @@ Rickshaw.Graph.HoverDetail = Rickshaw.Class.create({
 			this.element.appendChild(dot);
 
 			if (d.active) {
+				xLabel.innerHTML = d.formattedXValue;
+				this.element.style.left = this.graph.x(d.value.x) + 'px';
 				item.className = 'item active';
 				dot.className = 'dot active';
 			}
