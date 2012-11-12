@@ -16,10 +16,10 @@ Rickshaw.Graph.HoverDetail = Rickshaw.Class.create({
 
 		var element = this.element = document.createElement('div');
 		element.className = 'detail';
-
-		this.visible = true;
+	
 		graph.element.appendChild(element);
 
+		this.visible = true;
 		this.lastEvent = null;
 		this._addListeners();
 
@@ -48,66 +48,79 @@ Rickshaw.Graph.HoverDetail = Rickshaw.Class.create({
 		var eventY = e.offsetY || e.layerY;
 
 		var domainX = graph.x.invert(eventX);
-		var stackedData = graph.stackedData;
+		var stackedData = graph.data;
 
 		var topSeriesData = stackedData.slice(-1).shift();
 
-		var domainIndexScale = d3.scale.linear()
-			.domain([topSeriesData[0].x, topSeriesData.slice(-1).shift().x])
-			.range([0, topSeriesData.length]);
-
-		var approximateIndex = Math.floor(domainIndexScale(domainX));
-		var dataIndex = Math.min(approximateIndex || 0, stackedData[0].length - 1);
-
-		for (var i = approximateIndex; i < stackedData[0].length - 1;) {
-
-			if (!stackedData[0][i] || !stackedData[0][i + 1]) {
-				break;
-			}
-
-			if (stackedData[0][i].x <= domainX && stackedData[0][i + 1].x > domainX) {
-				dataIndex = i;
-				break;
-			}
-			if (stackedData[0][i + 1].x <= domainX) { i++ } else { i-- }
-		}
-
-		var domainX = stackedData[0][dataIndex].x;
-		var formattedXValue = this.xFormatter(domainX);
-		var graphX = graph.x(domainX);
 		var order = 0;
 
 		var detail = graph.series.active()
-			.map( function(s) { return { order: order++, series: s, name: s.name, value: s.stack[dataIndex] } } );
+			.map(function(s){
+				var domainIndexScale = d3.scale.linear()
+					.domain([s.data[0].x, s.data.slice(-1).shift().x])
+					.range([0, s.data.length]);
+
+				var approximateIndex = Math.floor(domainIndexScale(domainX));
+				var dataIndex = Math.min(approximateIndex || 0, s.data.length - 1);
+
+				for (var i = approximateIndex; i < s.data.length - 1;) {
+
+					if (!s.data[i] || !s.data[i + 1]) {
+						break;
+					}
+
+					if (s.data[i].x <= domainX && s.data[i + 1].x > domainX) {
+						dataIndex = i;
+						break;
+					}
+					if (s.data[i + 1].x <= domainX) { i++ } else { i-- }
+				}
+
+				return {order: order++, series: s, name: s.name, value: s.data[dataIndex]  };
+			});
+		
+
+		// var domainX = stackedData[0][dataIndex].x;
+		var formattedXValue = this.xFormatter(domainX);
+		// var graphX = graph.x(domainX);
+		// var formattedXValue;
+
+		// var detail = graph.series.active()
+		// 	.map( function(s) { return { order: order++, series: s, name: s.name, value: s.data[dataIndex] } } );
 
 		var activeItem;
 
 		var sortFn = function(a, b) {
-			return (a.value.y0 + a.value.y) - (b.value.y0 + b.value.y);
+			return (a.value.y) - (b.value.y);
+			// return (a.value.y0 + a.value.y) - (b.value.y0 + b.value.y);
 		};
 
 		var domainMouseY = graph.y.magnitude.invert(graph.element.offsetHeight - eventY);
 
-		detail.sort(sortFn).forEach( function(d) {
+		detail/*.sort(sortFn)*/.forEach( function(d) {
+			if(d.value)
+			{
+				d.formattedYValue = (this.yFormatter.constructor == Array) ?
+					this.yFormatter[detail.indexOf(d)](d.value.y) :
+					this.yFormatter(d.value.y);
 
-			d.formattedYValue = (this.yFormatter.constructor == Array) ?
-				this.yFormatter[detail.indexOf(d)](d.value.y) :
-				this.yFormatter(d.value.y);
+				formattedXValue = this.xFormatter(domainX);
+				d.graphX = graph.x(d.value.x); //graphX;
+				d.graphY = graph.y(d.value.y);
+				
 
-			d.graphX = graphX;
-			d.graphY = graph.y(d.value.y0 + d.value.y);
-
-			if (domainMouseY > d.value.y0 && domainMouseY < d.value.y0 + d.value.y && !activeItem) {
-				activeItem = d;
-				d.active = true;
+				// if (domainMouseY > d.value.y /*&& domainMouseY < d.value.y0 + d.value.y*/ && !activeItem) {
+					activeItem = d;
+					d.active = true;
+				// }
 			}
 
 		}, this );
 
 		this.element.innerHTML = '';
-		this.element.style.left = graph.x(domainX) + 'px';
+		// this.element.style.left = graph.x(domainX) + 'px';
 
-		if (this.visible) {
+		if (this.visible && activeItem) {
 			this.render( {
 				detail: detail,
 				domainX: domainX,
@@ -146,6 +159,8 @@ Rickshaw.Graph.HoverDetail = Rickshaw.Class.create({
 
 		var formattedXValue = args.formattedXValue;
 
+		var d
+
 		var xLabel = document.createElement('div');
 		xLabel.className = 'x_label';
 		xLabel.innerHTML = formattedXValue;
@@ -156,21 +171,23 @@ Rickshaw.Graph.HoverDetail = Rickshaw.Class.create({
 			var item = document.createElement('div');
 			item.className = 'item';
 			item.innerHTML = this.formatter(d.series, domainX, d.value.y, formattedXValue, d.formattedYValue, d);
-			item.style.top = this.graph.y(d.value.y0 + d.value.y) + 'px';
-
+			item.style.top = this.graph.y(d.value.y) + 'px';
+			item.style.left = this.graph.x(d.value.x) + 'px';
 			this.element.appendChild(item);
 
 			var dot = document.createElement('div');
 			dot.className = 'dot';
 			dot.style.top = item.style.top;
+			dot.style.left = item.style.left;
+
 			dot.style.borderColor = d.series.color;
 
 			this.element.appendChild(dot);
 
-			if (d.active) {
+			// if (d.active) {
 				item.className = 'item active';
 				dot.className = 'dot active';
-			}
+			// }
 
 		}, this );
 

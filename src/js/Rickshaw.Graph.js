@@ -74,12 +74,12 @@ Rickshaw.Graph = function(args) {
 				throw "series data is not an array: " + JSON.stringify(s.data);
 			}
 
-			pointsCount = pointsCount || s.data.length;
+			// pointsCount = pointsCount || s.data.length;
 
-			if (pointsCount && s.data.length != pointsCount) {
-				throw "series cannot have differing numbers of points: " +
-					pointsCount	+ " vs " + s.data.length + "; see Rickshaw.Series.zeroFill()";
-			}
+			// if (pointsCount && s.data.length != pointsCount) {
+			// 	throw "series cannot have differing numbers of points: " +
+			// 		pointsCount	+ " vs " + s.data.length + "; see Rickshaw.Series.zeroFill()";
+			// }
 
 			var dataTypeX = typeof s.data[0].x;
 			var dataTypeY = typeof s.data[0].y;
@@ -115,7 +115,11 @@ Rickshaw.Graph = function(args) {
 
 	this.render = function() {
 
-		var stackedData = this.stackData();
+		if(!args.unstack)
+			stackedData = this.stackData();
+		else
+			data = this.prepareData();
+
 		this.discoverRange();
 
 		this.renderer.render();
@@ -152,8 +156,19 @@ Rickshaw.Graph = function(args) {
 			series.stack = stackedData[i++];
 		} );
 
-		this.stackedData = stackedData;
+		this.data = stackedData;
 		return stackedData;
+	};
+
+	this.prepareData = function() {
+		var data = this.series.active()
+			.map( function(d) { return d.data } )
+			.map( function(d) { return d.filter( function(d) { return this._slice(d) }, this ) }, this);
+
+			;
+
+		this.data = data;
+		return data;
 	};
 
 	this.stackData.hooks = { data: [], after: [] };

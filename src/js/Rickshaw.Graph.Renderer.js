@@ -28,10 +28,10 @@ Rickshaw.Graph.Renderer = Rickshaw.Class.create( {
 		};
 	},
 
-	domain: function() {
-
+	stacked_domain: function()
+	{
 		var values = [];
-		var stackedData = this.graph.stackedData || this.graph.stackData();
+		var stackedData = this.graph.data || this.graph.stackData();
 
 		var topSeriesData = this.unstack ? stackedData : [ stackedData.slice(-1).shift() ];
 
@@ -61,6 +61,45 @@ Rickshaw.Graph.Renderer = Rickshaw.Class.create( {
 		return { x: [xMin, xMax], y: [yMin, yMax] };
 	},
 
+	unstacked_domain: function()
+	{
+		var values = [];
+		var stackedData = this.graph.data || this.graph.prepareData();
+
+
+		stackedData.forEach( function(series) {
+			series.forEach( function(d) {
+				values.push( d.y );
+			} );
+		} );
+
+		var xMin = stackedData[0][0].x;
+		var xMax = stackedData[0][ stackedData[0].length - 1 ].x;
+
+		xMin -= (xMax - xMin) * this.padding.left;
+		xMax += (xMax - xMin) * this.padding.right;
+
+		var yMin = this.graph.min === 'auto' ? d3.min( values ) : this.graph.min || 0;
+		var yMax = this.graph.max || d3.max( values );
+
+		if (this.graph.min === 'auto' || yMin < 0) {
+			yMin -= (yMax - yMin) * this.padding.bottom;
+		}
+
+		if (this.graph.max === undefined) {
+			yMax += (yMax - yMin) * this.padding.top;
+		}
+
+		return { x: [xMin, xMax], y: [yMin, yMax] };
+	},
+
+	domain: function() {
+		if(this.unstack)
+			return this.unstacked_domain()
+		else
+			return this.stacked_domain();
+	},
+
 	render: function() {
 
 		var graph = this.graph;
@@ -68,7 +107,7 @@ Rickshaw.Graph.Renderer = Rickshaw.Class.create( {
 		graph.vis.selectAll('*').remove();
 
 		var nodes = graph.vis.selectAll("path")
-			.data(this.graph.stackedData)
+			.data(this.graph.data)
 			.enter().append("svg:path")
 			.attr("d", this.seriesPathFactory());
 
